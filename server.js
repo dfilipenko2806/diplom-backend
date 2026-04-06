@@ -5,12 +5,16 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 
 const app = express();
-app.use(require("cors")());
+
+app.use(cors({
+    origin: ["https://diplom-frontend-flame.vercel.app"]
+}));
+
 app.use(express.json());
 
 mongoose.connect(process.env.MONGO_URL);
 
-// ===== МОДЕЛИ =====
+// ===== МОДЕЛЬ =====
 const UserSchema = new mongoose.Schema({
     email: String,
     password: String,
@@ -25,7 +29,7 @@ const UserSchema = new mongoose.Schema({
 
 const User = mongoose.model("User", UserSchema);
 
-const SECRET = "SECRET_KEY";
+const SECRET = process.env.JWT_SECRET;
 
 // ===== РЕГИСТРАЦИЯ =====
 app.post("/register", async (req, res) => {
@@ -54,10 +58,13 @@ app.post("/login", async (req, res) => {
     res.json({ token });
 });
 
-// ===== МИДЛВАР =====
+// ===== AUTH =====
 function auth(req, res, next) {
-    const token = req.headers.authorization;
-    if (!token) return res.sendStatus(401);
+    const header = req.headers.authorization;
+
+    if (!header) return res.sendStatus(401);
+
+    const token = header.split(" ")[1];
 
     try {
         const decoded = jwt.verify(token, SECRET);
@@ -68,7 +75,7 @@ function auth(req, res, next) {
     }
 }
 
-// ===== ДОБАВИТЬ В ПОРТФЕЛЬ =====
+// ===== ДОБАВИТЬ =====
 app.post("/portfolio", auth, async (req, res) => {
     const { crypto, amount, buyPrice } = req.body;
 
@@ -80,7 +87,7 @@ app.post("/portfolio", auth, async (req, res) => {
     res.json(user.portfolio);
 });
 
-// ===== ПОЛУЧИТЬ ПОРТФЕЛЬ =====
+// ===== ПОЛУЧИТЬ =====
 app.get("/portfolio", auth, async (req, res) => {
     const user = await User.findById(req.userId);
     res.json(user.portfolio);

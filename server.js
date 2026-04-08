@@ -35,6 +35,15 @@ const SECRET = process.env.JWT_SECRET;
 app.post("/register", async (req, res) => {
     const { email, password } = req.body;
 
+    // проверка на существующего пользователя
+    const existingUser = await User.findOne({ email });
+
+    if (existingUser) {
+        return res.status(400).json({
+            error: "Пользователь уже существует"
+        });
+    }
+
     const hash = await bcrypt.hash(password, 10);
 
     const user = new User({ email, password: hash });
